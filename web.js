@@ -1,3 +1,10 @@
+//ssh root@114.202.247.178
+// cd /var/www/jbuilding_server
+// git pull
+// pm2 restart jbuilding_server
+
+
+//pm2 start web.js --name jbuilding_server  pm2를 이용한 서버 실행
 import express from 'express';
 const app = express();
 import cors from 'cors';
@@ -33,7 +40,7 @@ app.get('/', (req, res) => {
     res.header("Access-Control-Allow-Credentials", 'true')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // 모든 HTTP 메서드 허용
     res.header('Content-Type', "application/json")
-    res.json('welcome My port Number')
+    res.json('welcome jbuilding_server')
 })
 
 
@@ -507,5 +514,5 @@ const freetaxbillfiled = ' "05"as `전자(세금)계산서 종류\n(01:일반, 0
 '"" as "외상미수금",'+
 '"01" as `영수(01),\n청구(02)`'
 httpServer.listen(8002, function (req, res) {
-    console.log('server start')
+    console.log('jbuilding server start')
 })
