@@ -2,7 +2,8 @@
 **node_modules
 /node_modules
 #database
-
+.env
+.env.*
 
 .DS_STORE
 
