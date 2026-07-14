@@ -18,6 +18,7 @@ import axios from 'axios';
 import nodemailer from 'nodemailer';
 import multer from 'multer';
 import apiRouter, { requireAuth } from './lib/api.js';
+import { normalizeQueryRows } from './lib/queryRows.js';
 
 dotenv.config();
 const storage = multer.memoryStorage();
@@ -398,13 +399,16 @@ app.get('/jbd/:name', requireAuth, async function (req, res) {
             + " (b.rent_bill)+(b.mng_bill)+(b.vat_bill)+(b.water_bill)+(b.other_bill)+(b.other_vat_bill) as '합계',"
             + "  a.etc as '비고' , b.etc as '메모'"
         const [results] = await sql.query(`SELECT ${field} FROM ${table} WHERE ${where}`, [year, month]);
-        return res.json(results);
+        return res.json(normalizeQueryRows(results));
         }else if(kind==='taxbilldown'){
         const [taxResult, freeTaxResult] = await Promise.all([
             sql.query(`SELECT ${taxbillfiled} FROM ${table} WHERE ${where}`, [year, month]),
             sql.query(`SELECT ${freetaxbillfiled} FROM ${table} WHERE ${where}`, [year, month]),
         ]);
-        return res.json([taxResult[0], freeTaxResult[0]]);
+        return res.json([
+            normalizeQueryRows(taxResult[0]),
+            normalizeQueryRows(freeTaxResult[0]),
+        ]);
         }
     }
 })
