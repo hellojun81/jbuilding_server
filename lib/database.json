@@ -1,17 +1,15 @@
-{"mysql":{
-    "host":"jcooly.cafe24.com",
-    "user":"jcooly",
-    "password":"dkffjqb@81",
-    "database":"jcooly",
-    "port":"3306",
-    "multipleStatements":true
-}
-,"Email":
-    {
-        "user":"gyulwangs",
-        "pass":"2023jeju@",
-        "mail":"gyulwangs@naver.com"
-    }
-
-
+{
+  "mysql": {
+    "host": "use-DB_HOST-environment-variable",
+    "user": "use-DB_USER-environment-variable",
+    "password": "use-DB_PASSWORD-environment-variable",
+    "database": "use-DB_NAME-environment-variable",
+    "port": 3306,
+    "multipleStatements": false
+  },
+  "Email": {
+    "user": "use-SMTP_USER-environment-variable",
+    "pass": "use-SMTP_APP_PASSWORD-environment-variable",
+    "mail": "use-MAIL_RECEIVER-environment-variable"
+  }
 }

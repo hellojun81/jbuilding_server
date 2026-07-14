@@ -4,6 +4,9 @@
 #database
 .env
 .env.*
+!.env.example
+/lib/database.json
+/private-backups/
 
 .DS_STORE
 

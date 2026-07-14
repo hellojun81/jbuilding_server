@@ -4,7 +4,7 @@
 // pm2 restart jbuilding_server
 
 
-//pm2 start web.js --name jbuilding_server  pm2를 이용한 서버 실행
+//pm2 start web.js --name jbuilding_server  <---pm2를 이용한 서버 실행
 import express from 'express';
 const app = express();
 import cors from 'cors';
@@ -17,10 +17,14 @@ import dotenv from 'dotenv';
 import axios from 'axios';
 import nodemailer from 'nodemailer';
 import multer from 'multer';
+import apiRouter, { requireAuth } from './lib/api.js';
 
 dotenv.config();
 const storage = multer.memoryStorage();
-const upload = multer({ storage: storage });
+const upload = multer({
+    storage: storage,
+    limits: { fileSize: 10 * 1024 * 1024, files: 5 },
+});
 const httpServer = http.createServer(app);
 // export const io = new Server(httpServer, {
 //     cors: {
@@ -31,11 +35,21 @@ const httpServer = http.createServer(app);
 
 
 
+const allowedOrigins = String(process.env.CORS_ORIGINS || '')
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+
 app.use(cors({
-    origin: true,
+    origin(origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+        callback(new Error('허용되지 않은 출처입니다.'));
+    },
     credentials: true, // 크로스 도메인 허용
-    methods: ['POST', 'PUT', 'GET', 'OPTIONS', 'HEAD'],
+    methods: ['POST', 'PATCH', 'GET', 'OPTIONS', 'HEAD'],
 }));
+app.use(express.json({ limit: '1mb' }));
+app.use('/api', apiRouter);
 app.get('/', (req, res) => {
     res.header("Access-Control-Allow-Credentials", 'true')
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // 모든 HTTP 메서드 허용
@@ -44,30 +58,27 @@ app.get('/', (req, res) => {
 })
 
 
-app.post('/gy/:name', async function (req, res) {
-    const { name } = req.params
-    let _url = req.url;
-    let queryData = url.parse(_url, true).query;
-    let result = new Object();
-})
+app.post('/gy/:name', (req, res) => res.status(410).json({ error: '사용하지 않는 API입니다.' }));
 
-app.post('/sendmail', upload.array('files'), async (req, res) => {
+app.post('/sendmail', requireAuth, upload.array('files'), async (req, res) => {
 console.log('sendmail')
     const { to, subject, text } = req.body;
     const files = req.files;
+    if (!process.env.SMTP_USER || !process.env.SMTP_APP_PASSWORD || !process.env.MAIL_RECEIVER) {
+      return res.status(503).json({ error: '메일 서버 설정이 없습니다.' });
+    }
     let transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: 'taulcontact@gmail.com',
-        pass: 'arcyhahhypapzczk',
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_APP_PASSWORD,
       },
     });
-  console.log('to',to)
-let frommail='hell@daum.net'
     try {
       let mailOptions = {
-        from:to,
-        to:'taulcontact@gmail.com',
+        from:process.env.SMTP_USER,
+        replyTo:to,
+        to:process.env.MAIL_RECEIVER,
         cc:to,
         subject:'[홈페이지 수신메일]'+subject,
         text,
@@ -204,7 +215,7 @@ let frommail='hell@daum.net'
 
 
 // })
-app.get('/jbd/:name', async function (req, res) {
+app.get('/jbd/:name', requireAuth, async function (req, res) {
     const { name } = req.params
     let _url = req.url;
     let queryData = url.parse(_url, true).query;
@@ -214,6 +225,9 @@ app.get('/jbd/:name', async function (req, res) {
     let month = queryData.month
     let keys = queryData.keyName
     let values = queryData.values
+    if (name !== 'getExcelData') {
+        return res.status(410).json({ error: '이 API는 새 관리 API로 이전되었습니다.' });
+    }
     if (keys !== undefined) {
         keys = keys.split(',')
         values = values.split(',')
@@ -292,7 +306,7 @@ app.get('/jbd/:name', async function (req, res) {
         })
 
     } else if (name === 'GetrentBill') {
-        let str = queryData.date.split('.')
+        let str = String(queryData.date || '').split('.')
         console.log('GetrentBill', str)
         let year = str[0]
         let month = str[1]
@@ -365,37 +379,33 @@ app.get('/jbd/:name', async function (req, res) {
             res.json(results)
         })
     } else if (name === 'getExcelData') {
-        let field
-        let str = queryData.date.split('.')
+        let str = String(queryData.date || '').split('.')
         let kind=queryData.kind 
         let year = str[0]
         let month = str[1]
-        let table = 'jbuildingmng a , jbuildingrentbill b'
-        let where = 'year="' + year + '" and month="' + month + '" and a.key_code=b.Comp_code'
-        let taxbillresult=[]
-        let sort = ""
-        if(kind==='rentbilldown'){
-        field = "b.date as '날짜' ,a.building_name  as '빌딩명',a.address as '주소',a.name as '이름',b.year as '년',b.month as '월' "
-            + " ,b.rent_bill as '임대료',b.mng_bill  as '관리비',b.vat_bill as '부가세',b.etc_bill as '수도세',"
-            + " (b.rent_bill)+(b.mng_bill)+(b.vat_bill)+(b.ETC_BILL)as '합계',"
-            + "  a.etc as '비고' , b.etc as '메모'"
-        }else if(kind==='taxbilldown'){
-        field = taxbillfiled
-        sql.readData(table, field, where, sort, (results) => {
-            taxbillresult.push(results)
-          })
-        field = freetaxbillfiled
+        if (!/^\d{4}$/.test(year) || !/^\d{2}$/.test(month) || Number(month) < 1 || Number(month) > 12) {
+            return res.status(400).json({ error: '날짜 형식이 올바르지 않습니다.' });
         }
-       
-        sql.readData(table, field, where, sort, (results) => {
-            console.log("results",results)
-            if(kind==='taxbilldown'){
-                taxbillresult.push(results)
-                results=taxbillresult
-            }
-            res.json(results)
-            
-        })
+        if (!['rentbilldown', 'taxbilldown'].includes(kind)) {
+            return res.status(400).json({ error: '내보내기 종류가 올바르지 않습니다.' });
+        }
+        let table = 'jbuildingmng a , jbuildingrentbill b'
+        let where = 'year = ? and month = ? and a.key_code=b.Comp_code'
+        if(kind==='rentbilldown'){
+        const field = "b.date as '날짜' ,a.building_name  as '빌딩명',a.address as '주소',a.name as '이름',b.year as '년',b.month as '월' "
+            + " ,b.rent_bill as '임대료',b.mng_bill as '관리비',b.vat_bill as '부가세',b.water_bill as '수도료',"
+            + " b.other_bill as '기타요금',b.other_vat_bill as '기타 부가세',"
+            + " (b.rent_bill)+(b.mng_bill)+(b.vat_bill)+(b.water_bill)+(b.other_bill)+(b.other_vat_bill) as '합계',"
+            + "  a.etc as '비고' , b.etc as '메모'"
+        const [results] = await sql.query(`SELECT ${field} FROM ${table} WHERE ${where}`, [year, month]);
+        return res.json(results);
+        }else if(kind==='taxbilldown'){
+        const [taxResult, freeTaxResult] = await Promise.all([
+            sql.query(`SELECT ${taxbillfiled} FROM ${table} WHERE ${where}`, [year, month]),
+            sql.query(`SELECT ${freetaxbillfiled} FROM ${table} WHERE ${where}`, [year, month]),
+        ]);
+        return res.json([taxResult[0], freeTaxResult[0]]);
+        }
     }
 })
 
@@ -513,6 +523,6 @@ const freetaxbillfiled = ' "05"as `전자(세금)계산서 종류\n(01:일반, 0
 '"" as "어음",'+
 '"" as "외상미수금",'+
 '"01" as `영수(01),\n청구(02)`'
-httpServer.listen(8002, function (req, res) {
+httpServer.listen(Number(process.env.PORT || 8002), function (req, res) {
     console.log('jbuilding server start')
 })
