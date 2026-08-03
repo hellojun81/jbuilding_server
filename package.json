@@ -10,6 +10,7 @@
     "test": "node --test",
     "db:backup-billing": "node scripts/backupBillingTables.js",
     "db:migrate-tax-invoices": "node scripts/migrateTaxInvoiceIssues.js",
+    "db:migrate-bank-transactions": "node scripts/migrateBankTransactions.js",
     "db:migrate-water-other": "node scripts/migrateWaterOtherCharges.js",
     "db:verify-water-other": "node scripts/verifyWaterOtherCharges.js"
   },
