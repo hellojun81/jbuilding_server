@@ -56,3 +56,16 @@ test('금액이 다른 미수납 청구서도 강제 수동 선택 후보로 제
   assert.equal(result.candidates[0].difference, -100);
   assert.equal(result.candidates[0].confidence, 'manual');
 });
+
+test('후보에 실제 청구월과 월별 고유 선택키를 포함한다', () => {
+  const result = matchCandidates(
+    { deposit_amount: 1000, remark1: '입금자' },
+    [
+      { renter_code: 38, renter_name: '백채김치찌개', bill_year: '2026', bill_month: '08', rent_bill: 1000 },
+      { renter_code: 38, renter_name: '백채김치찌개', bill_year: '2026', bill_month: '09', rent_bill: 1100 },
+    ],
+  );
+  assert.equal(result.candidates[0].candidateKey, '38:2026-08');
+  assert.equal(result.candidates[0].billYear, '2026');
+  assert.equal(result.candidates[0].billMonth, '08');
+});
