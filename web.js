@@ -1,10 +1,4 @@
-//ssh root@114.202.247.178
-// cd /var/www/jbuilding_server
-// git pull
-// pm2 restart jbuilding_server
-
-
-//pm2 start web.js --name jbuilding_server  <---pm2를 이용한 서버 실행
+import 'dotenv/config';
 import express from 'express';
 const app = express();
 import cors from 'cors';
@@ -13,14 +7,15 @@ import http from 'http';
 import sql from './lib/CRUD.js';
 import url from 'url';
 import request from 'request';
-import dotenv from 'dotenv';
 import axios from 'axios';
 import nodemailer from 'nodemailer';
 import multer from 'multer';
 import apiRouter, { requireAuth } from './lib/api.js';
 import { normalizeQueryRows } from './lib/queryRows.js';
 
-dotenv.config();
+const host = process.env.HOST || '127.0.0.1';
+const port = Number(process.env.PORT || 8002);
+app.set('trust proxy', 1);
 const storage = multer.memoryStorage();
 const upload = multer({
     storage: storage,
@@ -56,6 +51,15 @@ app.get('/', (req, res) => {
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE'); // 모든 HTTP 메서드 허용
     res.header('Content-Type', "application/json")
     res.json('welcome jbuilding_server')
+})
+
+app.get('/health', async (req, res) => {
+    try {
+        await sql.query('SELECT 1 AS ok');
+        res.json({ status: 'ok', database: 'ok' });
+    } catch (error) {
+        res.status(503).json({ status: 'error', database: 'unavailable' });
+    }
 })
 
 
@@ -527,6 +531,6 @@ const freetaxbillfiled = ' "05"as `전자(세금)계산서 종류\n(01:일반, 0
 '"" as "어음",'+
 '"" as "외상미수금",'+
 '"01" as `영수(01),\n청구(02)`'
-httpServer.listen(Number(process.env.PORT || 8002), function (req, res) {
-    console.log('jbuilding server start')
+httpServer.listen(port, host, function (req, res) {
+    console.log(`jbuilding server start http://${host}:${port}`)
 })
