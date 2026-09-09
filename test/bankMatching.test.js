@@ -69,3 +69,18 @@ test('후보에 실제 청구월과 월별 고유 선택키를 포함한다', ()
   assert.equal(result.candidates[0].billYear, '2026');
   assert.equal(result.candidates[0].billMonth, '08');
 });
+
+test('미수납 청구서에 남은 기존 매칭 정보를 후보에 포함한다', () => {
+  const result = matchCandidates(
+    { deposit_amount: 3500000, remark1: '이명호' },
+    [{
+      renter_code: 20, renter_name: '스시다바', bill_year: '2026', bill_month: '08',
+      rent_bill: 2890000, mng_bill: 210000, vat_bill: 310000, water_bill: 56324,
+      existing_match_id: 27, existing_transaction_id: 1,
+      existing_deposit_amount: 2600000, existing_payer: '이명호',
+    }],
+  );
+  assert.equal(result.candidates[0].existingMatchId, 27);
+  assert.equal(result.candidates[0].existingDepositAmount, 2600000);
+  assert.equal(result.candidates[0].existingPayer, '이명호');
+});

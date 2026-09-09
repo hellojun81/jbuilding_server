@@ -1,6 +1,11 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { buildTaxinvoice, makeDocumentKey, taxInvoiceProviderStatus } from '../lib/taxInvoiceProvider.js';
+import {
+  buildTaxinvoice,
+  makeDocumentKey,
+  summarizeNtsTransmission,
+  taxInvoiceProviderStatus,
+} from '../lib/taxInvoiceProvider.js';
 
 const supplier = {
   corpName: '(주)타울',
@@ -85,4 +90,23 @@ test('configuration status never exposes credentials', () => {
   const status = taxInvoiceProviderStatus();
   assert.equal(status.configured, true);
   assert.equal(JSON.stringify(status).includes('secret'), false);
+});
+
+test('국세청 승인번호와 304 성공 상태로 전송완료를 판정한다', () => {
+  const summary = summarizeNtsTransmission([
+    { stateCode: 304, ntsconfirmNum: 'confirm-1', ntssendErrCode: 'SUC001', ntssendDT: '20260908152450', ntsresultDT: '20260908163354' },
+    { stateCode: 304, ntsconfirmNum: 'confirm-2', ntssendErrCode: 'SUC001', ntssendDT: '20260908152451', ntsresultDT: '20260908163355' },
+  ], 2);
+  assert.equal(summary.status, '국세청 전송완료');
+  assert.equal(summary.confirmedCount, 2);
+  assert.equal(summary.resultAt, '20260908163355');
+});
+
+test('국세청 오류코드 또는 305 상태를 전송실패로 판정한다', () => {
+  const summary = summarizeNtsTransmission([
+    { stateCode: 305, ntsconfirmNum: 'confirm-1', ntssendErrCode: 'ERR001' },
+  ], 1);
+  assert.equal(summary.status, '국세청 전송실패');
+  assert.equal(summary.failedCount, 1);
+  assert.deepEqual(summary.errorCodes, ['ERR001']);
 });
