@@ -13,9 +13,15 @@ test('accept consistent saved amounts and recalculate omitted VAT on partial upd
 });
 test('reject invalid amounts and other VAT mismatch', () => {
   for (const amount of [-1, 'abc', 1.5, Infinity, {}, true]) assert.throws(() => validateBillingAmounts({ rent_bill: amount }));
-  assert.throws(() => validateBillingAmounts({ other_bill: 10000, other_vat_bill: 0 }));
+  assert.throws(() => validateBillingAmounts({ other_bill: 10000, other_vat_bill: 123 }));
 });
 test('round consistently per taxable item and preserve memo-only edits', () => {
   assert.equal(validateBillingAmounts({ rent_bill: 15, mng_bill: 15 }).vat_bill, 4);
   assert.deepEqual(validateBillingAmounts({ etc: '메모' }, current), { etc: '메모' });
+});
+
+test('other charges remain exact with no automatic surcharge while historical VAT remains readable', () => {
+ assert.equal(validateBillingAmounts({other_bill:500}).other_vat_bill,0);
+ assert.equal(validateBillingAmounts({other_bill:500,other_vat_bill:0}).other_vat_bill,0);
+ assert.equal(validateBillingAmounts({other_bill:500,other_vat_bill:50}).other_vat_bill,50);
 });

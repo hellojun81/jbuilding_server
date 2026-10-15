@@ -12,7 +12,11 @@
     "db:migrate-tax-invoices": "node scripts/migrateTaxInvoiceIssues.js",
     "db:migrate-bank-transactions": "node scripts/migrateBankTransactions.js",
     "db:migrate-water-other": "node scripts/migrateWaterOtherCharges.js",
-    "db:verify-water-other": "node scripts/verifyWaterOtherCharges.js"
+    "db:verify-water-other": "node scripts/verifyWaterOtherCharges.js",
+    "db:migrate-bill-delivery": "node scripts/migrateBillDelivery.js",
+    "db:migrate-bill-deliveries": "node scripts/migrateBillDeliveries.js",
+    "db:migrate-deleted-bills": "node scripts/migrateDeletedBills.js",
+    "db:migrate-bill-settings": "node scripts/migrateBillSettings.js"
   },
   "author": "",
   "license": "ISC",

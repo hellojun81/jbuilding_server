@@ -42,7 +42,7 @@ app.use(cors({
         callback(new Error('허용되지 않은 출처입니다.'));
     },
     credentials: true, // 크로스 도메인 허용
-    methods: ['POST', 'PATCH', 'GET', 'OPTIONS', 'HEAD'],
+    methods: ['PUT', 'POST', 'PATCH', 'DELETE', 'GET', 'OPTIONS', 'HEAD'],
 }));
 app.use(express.json({ limit: '1mb' }));
 app.use('/api', apiRouter);
